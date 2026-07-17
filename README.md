@@ -5,7 +5,7 @@ Live telemetry, commands and HTTP-mode configuration for the
 browser, over the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API).
 No install, no drivers, no backend.
 
-![Web3 Pi UPS Workbench — live session with a real UPS powering the laptop](docs/screenshot.png)
+![Web3 Pi UPS Workbench — dashboard with a mains-loss event on the voltage timeline and in the device log](docs/screenshot.png)
 
 Plug the UPS **output** USB-C port into your laptop: the UPS keeps powering
 the laptop (USB-PD) while handing it the USB host role (PD DR_Swap), so the
