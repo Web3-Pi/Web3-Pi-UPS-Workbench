@@ -14,8 +14,8 @@
 <body>
   <header class="topbar">
     <div class="brand">
-      <div class="brand-mark">3π</div>
-      <div class="brand-name">Web3 Pi UPS<small>Workbench</small></div>
+      <a href="https://www.web3pi.io" rel="noopener"><img src="assets/web3pi-logo.png" alt="Web3 Pi" class="brand-logo" /></a>
+      <span class="brand-tag">UPS Workbench</span>
     </div>
     <div class="spacer"></div>
     <span id="conn-pill" class="conn-pill" data-state="disconnected"><span class="dot"></span><span id="conn-label">Disconnected</span></span>
@@ -32,9 +32,20 @@
           Plug the UPS <b>output</b> USB-C port into this computer and press <b>Connect UPS</b>.<br />
           The UPS keeps powering your laptop while the telemetry link runs (PD DR_Swap).
         </p>
-        <p id="gate-unsupported" class="warn" hidden>
-          This browser has no Web Serial API — use Chrome, Edge or another Chromium-based desktop browser.
-        </p>
+        <div id="gate-unsupported" class="unsupported" hidden>
+          <b id="unsupported-title">This browser can't connect to USB devices</b>
+          <p id="unsupported-text">
+            The Web Serial API is not available here. Use a <b>desktop</b> browser that supports it:
+          </p>
+          <ul class="browser-list">
+            <li>Google Chrome (89+)</li>
+            <li>Microsoft Edge (89+)</li>
+            <li>Mozilla Firefox (151+)</li>
+            <li>Opera (75+)</li>
+          </ul>
+          <p class="note">Safari, iOS/Android browsers and phones/tablets are not supported.
+            You can still explore the interface in <b>Demo</b> mode.</p>
+        </div>
         <p class="warn">
           Requires UPS firmware with USB-PD DR_Swap support (Web3-Pi-UPS <code>main</code> as of 2026-07-17).
           First attach: allow the “Web3_Pi_UPS” accessory when macOS asks. No drivers needed.
@@ -146,7 +157,9 @@
   </main>
 
   <footer>
-    Web3 Pi UPS Workbench · WUPS protocol v1 over Web Serial ·
+    Web3 Pi UPS Workbench · WUPS protocol v1 · built on the
+    <a href="https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API" rel="noopener">Web Serial API</a>
+    (desktop Chrome, Edge, Firefox 151+, Opera) ·
     <a href="https://github.com/Web3-Pi/Web3-Pi-UPS-Workbench" rel="noopener">source</a> ·
     <a href="https://docs.web3pi.io/ups/" rel="noopener">docs</a>
   </footer>

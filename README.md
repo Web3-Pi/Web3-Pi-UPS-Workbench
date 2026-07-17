@@ -28,9 +28,10 @@ useful for UI work and for a look around without hardware.
 
 ## Requirements
 
-- Chromium-based **desktop** browser (Chrome, Edge, …) — Safari and Firefox
-  do not implement Web Serial; Android does not expose it at all
-- UPS firmware with DR_Swap support (`PD_DataRole` or newer)
+- a **desktop** browser with the [Web Serial API](https://developer.mozilla.org/en-US/docs/Web/API/Web_Serial_API):
+  Chrome 89+, Edge 89+, Firefox 151+, Opera 75+. Safari and mobile browsers
+  (iOS/Android) are not supported — the page detects this and says so
+- UPS firmware with USB-PD DR_Swap support (Web3-Pi-UPS `main` as of 2026-07-17)
 - served over **HTTPS** (or `localhost`) — Web Serial requires a secure context
 - first attach on macOS: click **Allow** on the "Web3_Pi_UPS" accessory prompt
 
@@ -72,4 +73,4 @@ Traefik terminates HTTPS — which is exactly what Web Serial needs.
 
 ## License
 
-MIT
+GPL-3.0

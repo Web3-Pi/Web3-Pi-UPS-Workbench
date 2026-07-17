@@ -367,8 +367,20 @@ function boot() {
   wireCommands();
   wireConfig();
 
-  if (!SerialTransport.supported()) $('gate-unsupported').hidden = false;
-  else connectSerial({ interactive: false }); // silent re-attach to a granted port
+  if (!SerialTransport.supported()) {
+    // Capability-based, not UA sniffing: navigator.serial is the one thing
+    // that matters. The message just adapts for the phone/tablet case.
+    $('gate-unsupported').hidden = false;
+    $('btn-connect').hidden = true;
+    const mobile = navigator.userAgentData?.mobile ?? /Android|iPhone|iPad|Mobi/i.test(navigator.userAgent);
+    if (mobile) {
+      $('unsupported-title').textContent = 'Phones and tablets are not supported';
+      $('unsupported-text').innerHTML =
+        'Mobile browsers do not expose the Web Serial API. Open this page on a <b>computer</b> in one of:';
+    }
+  } else {
+    connectSerial({ interactive: false }); // silent re-attach to a granted port
+  }
 }
 
 boot();
