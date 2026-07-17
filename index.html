@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Web3 Pi UPS Workbench</title>
+  <meta name="description" content="Live telemetry, commands and HTTP-mode configuration for the Web3 Pi UPS — straight from the browser over Web Serial." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400..700&family=Montserrat:wght@600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f96da'/%3E%3Ctext x='16' y='22' font-family='sans-serif' font-weight='800' font-size='15' fill='white' text-anchor='middle'%3E3π%3C/text%3E%3C/svg%3E" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">3π</div>
+      <div class="brand-name">Web3 Pi UPS<small>Workbench</small></div>
+    </div>
+    <div class="spacer"></div>
+    <span id="conn-pill" class="conn-pill" data-state="disconnected"><span class="dot"></span><span id="conn-label">Disconnected</span></span>
+    <button id="btn-demo" class="small">Demo</button>
+    <button id="btn-connect" class="primary">Connect UPS</button>
+    <button id="btn-disconnect" hidden>Disconnect</button>
+  </header>
+
+  <main class="layout">
+    <div class="col">
+      <section id="gate" class="overlay">
+        <h3>Connect your UPS</h3>
+        <p>
+          Plug the UPS <b>output</b> USB-C port into this computer and press <b>Connect UPS</b>.<br />
+          The UPS keeps powering your laptop while the telemetry link runs (PD DR_Swap).
+        </p>
+        <p id="gate-unsupported" class="warn" hidden>
+          This browser has no Web Serial API — use Chrome, Edge or another Chromium-based desktop browser.
+        </p>
+        <p class="warn">
+          Requires UPS firmware with USB-PD DR_Swap support (Web3-Pi-UPS <code>main</code> as of 2026-07-17).
+          First attach: allow the “Web3_Pi_UPS” accessory when macOS asks. No drivers needed.
+        </p>
+      </section>
+
+      <section id="live" hidden>
+        <div class="tiles">
+          <div class="tile">
+            <div class="label"><span>Output</span><span id="b-rail" class="badge idle">—</span></div>
+            <div class="value" id="t-vout">—</div>
+            <div class="sub" id="t-vout-sub">PD contract —</div>
+          </div>
+          <div class="tile">
+            <div class="label"><span>Input</span><span id="b-mains" class="badge idle">—</span></div>
+            <div class="value" id="t-vin">—</div>
+            <div class="sub" id="t-vin-sub">PD contract —</div>
+          </div>
+          <div class="tile">
+            <div class="label"><span>Battery</span><span id="b-batt" class="badge idle">—</span></div>
+            <div class="value" id="t-vbat">—</div>
+            <div class="sub" id="t-vbat-sub">—</div>
+          </div>
+          <div class="tile">
+            <div class="label"><span>Input current</span></div>
+            <div class="value" id="t-iin">—</div>
+            <div class="spark" id="spark-iin"></div>
+          </div>
+          <div class="tile">
+            <div class="label"><span>Temperature</span><span id="b-temp" class="badge idle">—</span></div>
+            <div class="value" id="t-temp">—</div>
+            <div class="sub" id="t-temp-sub">charger —</div>
+          </div>
+          <div class="tile">
+            <div class="label"><span>Faults</span><span id="b-fault" class="badge idle">—</span></div>
+            <div class="value" id="t-uptime" style="font-size:16px">—</div>
+            <div class="sub">UPS uptime</div>
+          </div>
+        </div>
+      </section>
+
+      <section id="chart-card" class="card" hidden>
+        <h2>
+          Voltages <span class="hint">V, last 10 min</span>
+          <span class="chart-toolbar">
+            <button id="btn-table" class="small" aria-pressed="false">Table</button>
+          </span>
+        </h2>
+        <div id="chart-volt" class="chart-host"></div>
+        <div id="table-volt" class="table-host" hidden></div>
+      </section>
+
+      <section id="log-card" class="card" hidden>
+        <h2>
+          Device log
+          <span class="chart-toolbar row">
+            <label class="hint" style="display:flex;align-items:center;gap:5px">
+              <input type="checkbox" id="log-pd-only" /> PD events only
+            </label>
+          </span>
+        </h2>
+        <div id="log" class="log-host" role="log" aria-live="polite"></div>
+      </section>
+    </div>
+
+    <div class="col">
+      <section class="card" id="cmd-card">
+        <h2>Commands</h2>
+        <div class="cmd-grid">
+          <button id="cmd-ping" disabled>Ping nodes</button>
+          <button id="cmd-beep" disabled>Beep</button>
+          <button id="cmd-pwr-enable" disabled>Output on</button>
+          <button id="cmd-pwr-cycle" class="danger" disabled>Power-cycle output</button>
+          <button id="cmd-pwr-disable" class="danger" disabled>Output off</button>
+          <button id="cmd-ups-reset" class="danger" disabled>Reset UPS MCU</button>
+        </div>
+        <div id="cmd-result" class="cmd-result"></div>
+        <div class="callout">
+          <b>Careful:</b> the output port powers <i>this computer</i>. “Output off” and “Power-cycle”
+          drop VBUS — your laptop falls back to its own battery and the serial link re-connects
+          after the PD contract is re-negotiated.
+        </div>
+      </section>
+
+      <section class="card" id="http-card">
+        <h2>HTTP mode <span class="hint">net.config → ESP32, stored in NVS</span></h2>
+        <div class="field">
+          <label for="cfg-url">Server base URL</label>
+          <input id="cfg-url" type="url" placeholder="http://your-vps:8080" spellcheck="false" />
+          <span class="note">Empty value clears the override (falls back to the firmware default).</span>
+        </div>
+        <div class="row">
+          <button id="cfg-apply-url" class="primary" disabled>Apply URL</button>
+        </div>
+        <div id="cfg-result" class="cmd-result"></div>
+        <div class="callout">
+          Values are <b>write-only</b> over the wire (the protocol has no read-back op) and persist in the
+          ESP32's NVS across reboots. Switching the backend mode itself (MQTT / Arkiv / HTTP) is done from
+          the <b>OLED menu</b> on the device. Setup guide:
+          <a href="https://docs.web3pi.io/ups/http-mode/" target="_blank" rel="noopener">docs.web3pi.io/ups/http-mode</a>.
+        </div>
+      </section>
+
+      <section class="card" id="info-card" hidden>
+        <h2>Device</h2>
+        <div id="info-body" class="cmd-result" style="margin-top:0"></div>
+      </section>
+    </div>
+  </main>
+
+  <footer>
+    Web3 Pi UPS Workbench · WUPS protocol v1 over Web Serial ·
+    <a href="https://github.com/Web3-Pi/Web3-Pi-UPS-Workbench" rel="noopener">source</a> ·
+    <a href="https://docs.web3pi.io/ups/" rel="noopener">docs</a>
+  </footer>
+
+  <div id="toasts" class="toast-host" role="status" aria-live="polite"></div>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>

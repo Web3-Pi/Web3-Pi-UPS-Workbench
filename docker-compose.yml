@@ -1,0 +1,18 @@
+# Dokploy: create a Compose app pointing at this repo/file, attach the domain
+# (e.g. workbench.web3pi.io) to service `web`, port 80 — Dokploy's Traefik
+# terminates HTTPS, which the Web Serial API requires.
+#
+# The external dokploy-network is what lets Traefik reach the container —
+# same pattern as the panel's production compose.
+services:
+  web:
+    build: .
+    restart: unless-stopped
+    networks:
+      - dokploy-network
+    labels:
+      - traefik.docker.network=dokploy-network
+
+networks:
+  dokploy-network:
+    external: true
