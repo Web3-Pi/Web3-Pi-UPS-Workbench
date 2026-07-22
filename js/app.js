@@ -7,6 +7,7 @@ import {
 } from './wups.js';
 import { SerialTransport, DemoTransport } from './transport.js';
 import { SeriesStore, TimelineChart, Sparkline, renderTable, SERIES_COLORS } from './charts.js';
+import { initFirmware } from './firmware.js';
 
 const $ = (id) => document.getElementById(id);
 
@@ -25,6 +26,7 @@ const voltStore = new SeriesStore(['Vout', 'Vin', 'Vbat']);
 let voltChart = null;
 let iinSpark = null;
 let tableVisible = false;
+let firmware = null; // Firmware card controller (firmware.js)
 
 // ---------------------------------------------------------------- helpers
 
@@ -166,6 +168,7 @@ function setMode(next) {
   for (const id of ['cmd-ping', 'cmd-beep', 'cmd-pwr-enable', 'cmd-pwr-cycle', 'cmd-pwr-disable', 'cmd-ups-reset', 'cfg-apply-url'])
     $(id).disabled = !live;
   if (!live) $('info-body').textContent = '';
+  firmware?.setSerialConnected(next === 'connected'); // BOOTSEL reboot needs the real link
 }
 
 // ---------------------------------------------------------------- connect / disconnect
@@ -366,6 +369,11 @@ function boot() {
 
   wireCommands();
   wireConfig();
+  firmware = initFirmware({
+    isSerialConnected: () => mode === 'connected',
+    closeSerial: disconnect,
+    toast,
+  });
 
   if (!SerialTransport.supported()) {
     // Capability-based, not UA sniffing: navigator.serial is the one thing

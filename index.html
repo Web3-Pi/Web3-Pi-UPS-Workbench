@@ -149,6 +149,63 @@
         </div>
       </section>
 
+      <section class="card" id="fw-card">
+        <h2>Firmware <span class="hint">RP2040 · UF2 via BOOTSEL</span></h2>
+        <div id="fw-unsupported" class="unsupported" hidden>
+          <b>This browser can't flash over USB</b>
+          <p>The WebUSB API is not available here. Flashing needs a <b>desktop</b> Chromium browser:</p>
+          <ul class="browser-list">
+            <li>Google Chrome (61+)</li>
+            <li>Microsoft Edge (79+)</li>
+            <li>Opera (48+)</li>
+          </ul>
+          <p class="note">Firefox and Safari do not implement WebUSB. Telemetry above is unaffected.</p>
+        </div>
+        <div class="field">
+          <label for="fw-file">Firmware image (.uf2)</label>
+          <input id="fw-file" type="file" accept=".uf2" />
+          <span class="note" id="fw-file-info">No file selected.</span>
+        </div>
+        <ol class="stepper">
+          <li class="step" id="fw-step-1">
+            <span class="step-no">1</span>
+            <div class="step-body">
+              <span class="step-title">Reboot to bootloader</span>
+              <div class="row"><button id="fw-reboot" disabled>Reboot to BOOTSEL</button></div>
+              <span class="note">
+                Needs the serial link connected — the session closes and the port is tapped at
+                1200&nbsp;baud, restarting the RP2040 as “RP2 Boot”.
+                Device already showing the <code>RPI-RP2</code> drive? Skip to step&nbsp;2.
+              </span>
+            </div>
+          </li>
+          <li class="step" id="fw-step-2">
+            <span class="step-no">2</span>
+            <div class="step-body">
+              <span class="step-title">Connect bootloader</span>
+              <div class="row"><button id="fw-connect">Connect bootloader</button></div>
+              <span class="note">Pick “RP2 Boot” in the browser's USB dialog.</span>
+            </div>
+          </li>
+          <li class="step" id="fw-step-3">
+            <span class="step-no">3</span>
+            <div class="step-body">
+              <span class="step-title">Flash</span>
+              <div class="row"><button id="fw-flash" class="primary" disabled>Flash firmware</button></div>
+              <div id="fw-progress" hidden>
+                <div class="fw-progress-bar"><div id="fw-bar"></div></div>
+                <span class="note" id="fw-phase"></span>
+              </div>
+            </div>
+          </li>
+        </ol>
+        <div id="fw-log" class="log-host fw-log" role="log" aria-live="polite" hidden></div>
+        <div class="callout">
+          The UPS power path runs on a separate MCU — the output keeps powering your device while
+          the RP2040 sits in the bootloader. Erase, write and verify run entirely in the browser.
+        </div>
+      </section>
+
       <section class="card" id="info-card" hidden>
         <h2>Device</h2>
         <div id="info-body" class="cmd-result" style="margin-top:0"></div>
