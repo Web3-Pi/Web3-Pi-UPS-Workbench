@@ -256,8 +256,11 @@ async function pingAll() {
       const resp = await sendExpectingResp(req.ping(dst), `ping ${name}`, 1500);
       const pong = decodeSysPong(resp.payload);
       const rtt = (performance.now() - t0).toFixed(0);
+      const fw = pong
+        ? (pong.fwStr ?? `${pong.fwVersion >> 8}.${pong.fwVersion & 0xff}`)
+        : null;
       lines.push(pong
-        ? `${name.padEnd(7)} fw ${pong.fwVersion >> 8}.${pong.fwVersion & 0xff}  up ${fmtUptime(Math.floor(pong.uptimeMs / 1000))}  rtt ${rtt} ms`
+        ? `${name.padEnd(7)} fw ${fw}  up ${fmtUptime(Math.floor(pong.uptimeMs / 1000))}  rtt ${rtt} ms`
         : `${name.padEnd(7)} pong (unparsed)  rtt ${rtt} ms`);
     } catch {
       lines.push(`${name.padEnd(7)} no response`);

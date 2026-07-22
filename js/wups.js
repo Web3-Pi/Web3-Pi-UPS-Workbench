@@ -232,11 +232,20 @@ export function decodeSysLog(p) {
   return { level: p[1], text: new TextDecoder().decode(p.subarray(4, 4 + len)) };
 }
 
-/** system.ping RESP (pong). */
+/** system.ping RESP (pong). An ASCII fw-version string may follow the 8-byte
+ * struct (protocol.h optional tail, e.g. "esp32:0.6.3") — absent on older
+ * firmware, in which case fwStr is null and the coarse u16 applies. */
 export function decodeSysPong(p) {
   if (p.length < 8 || p[0] !== PROTO_VERSION) return null;
   const d = dv(p);
-  return { fwVersion: d.getUint16(2, true), uptimeMs: d.getUint32(4, true) };
+  let fwStr = null;
+  if (p.length > 8) {
+    const tail = p.subarray(8);
+    if (tail.every((b) => b >= 0x20 && b <= 0x7e)) {
+      fwStr = new TextDecoder().decode(tail);
+    }
+  }
+  return { fwVersion: d.getUint16(2, true), uptimeMs: d.getUint32(4, true), fwStr };
 }
 
 /** power.event broadcast. */
