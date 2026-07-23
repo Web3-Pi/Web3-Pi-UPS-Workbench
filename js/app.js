@@ -376,6 +376,7 @@ function boot() {
     isSerialConnected: () => mode === 'connected',
     closeSerial: disconnect,
     toast,
+    sendExpectingResp, // ESP32-via-link firmware transfer rides the session
   });
 
   if (!SerialTransport.supported()) {

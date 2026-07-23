@@ -1,12 +1,27 @@
-// Firmware section: UF2 upload → 1200-baud BOOTSEL reboot → WebUSB flash.
-// UI glue only — UF2 parsing lives in uf2.js, the PICOBOOT protocol in
-// picoboot.js. The serial side reuses the app's transport/session.
+// Firmware card — target-based flasher with three modes:
+//   RP2040 (UF2):      1200-baud BOOTSEL reboot → WebUSB PICOBOOT (this file;
+//                      UF2 parsing in uf2.js, PICOBOOT protocol in picoboot.js)
+//   ESP32 via link:    net.fw_xfer over the normal serial session, RP2040
+//                      routes into the ESP32's OTA slot (fw-esp32-link.js)
+//   ESP32 direct USB:  esptool-js to the M.2 module's own USB-Serial-JTAG
+//                      port (fw-esp32-usb.js)
+// This file keeps the RP2040 flow and owns the shared bits: the target
+// selector, the log console and button state.
 
 import { parseUf2 } from './uf2.js';
 import { PicobootDevice, flashImage } from './picoboot.js';
 import { UPS_USB_FILTER } from './transport.js';
+import { initEsp32Link } from './fw-esp32-link.js';
+import { initEsp32Usb } from './fw-esp32-usb.js';
 
 const $ = (id) => document.getElementById(id);
+
+const MODES = ['rp2040', 'esp32-link', 'esp32-usb'];
+const MODE_HINTS = {
+  rp2040: 'RP2040 · UF2 via BOOTSEL',
+  'esp32-link': 'ESP32 · OTA through the UPS link',
+  'esp32-usb': 'ESP32 · esptool via the M.2 USB port',
+};
 
 const hex = (v) => `0x${(v >>> 0).toString(16).toUpperCase().padStart(8, '0')}`;
 const fmtKb = (bytes) => `${(bytes / 1024).toFixed(1)} KB`;
@@ -19,9 +34,10 @@ const PHASE_WINDOW = { erase: [0, 20], write: [20, 75], verify: [75, 100], reboo
 /**
  * Wire up the Firmware card. `isSerialConnected` reports the app's Web
  * Serial session state, `closeSerial` performs a clean manual disconnect
- * (no auto-reconnect), `toast` is the app's notifier.
+ * (no auto-reconnect), `toast` is the app's notifier, `sendExpectingResp`
+ * is the app's REQ→RESP exchange (used by the ESP32-via-link mode).
  */
-export function initFirmware({ isSerialConnected, closeSerial, toast }) {
+export function initFirmware({ isSerialConnected, closeSerial, toast, sendExpectingResp }) {
   let image = null; // parsed UF2 (+ fileName/fileSize) once a file validates
   let boot = null; // PicobootDevice while the bootloader is connected
   let busy = false; // a reboot/flash operation is in flight
@@ -189,7 +205,23 @@ export function initFirmware({ isSerialConnected, closeSerial, toast }) {
     }
   }
 
+  // ---------------------------------------------------------- mode selector
+
+  function selectMode(mode) {
+    for (const m of MODES) {
+      $(`fw-mode-${m}`).hidden = m !== mode;
+      $(`fw-tab-${m}`).setAttribute('aria-pressed', String(m === mode));
+    }
+    $('fw-hint').textContent = MODE_HINTS[mode];
+  }
+
   // ------------------------------------------------------------------ boot
+
+  for (const m of MODES) $(`fw-tab-${m}`).onclick = () => selectMode(m);
+  selectMode('rp2040');
+
+  const esp32Link = initEsp32Link({ isSerialConnected, sendExpectingResp, log: fwLog, toast });
+  initEsp32Usb({ log: fwLog, toast });
 
   $('fw-file').onchange = onFileChange;
   $('fw-reboot').onclick = onReboot;
@@ -220,6 +252,7 @@ export function initFirmware({ isSerialConnected, closeSerial, toast }) {
     setSerialConnected(connected) {
       if (connected && $('fw-step-1').dataset.state !== 'done') setStep(1, 'active');
       refreshButtons();
+      esp32Link.setSerialConnected(connected);
     },
   };
 }

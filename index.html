@@ -150,60 +150,147 @@
       </section>
 
       <section class="card" id="fw-card">
-        <h2>Firmware <span class="hint">RP2040 · UF2 via BOOTSEL</span></h2>
-        <div id="fw-unsupported" class="unsupported" hidden>
-          <b>This browser can't flash over USB</b>
-          <p>The WebUSB API is not available here. Flashing needs a <b>desktop</b> Chromium browser:</p>
-          <ul class="browser-list">
-            <li>Google Chrome (61+)</li>
-            <li>Microsoft Edge (79+)</li>
-            <li>Opera (48+)</li>
-          </ul>
-          <p class="note">Firefox and Safari do not implement WebUSB. Telemetry above is unaffected.</p>
+        <h2>Firmware <span class="hint" id="fw-hint">RP2040 · UF2 via BOOTSEL</span></h2>
+        <div class="seg" role="group" aria-label="Flash target">
+          <button id="fw-tab-rp2040" aria-pressed="true">RP2040 · UF2</button>
+          <button id="fw-tab-esp32-link" aria-pressed="false">ESP32 · UPS link</button>
+          <button id="fw-tab-esp32-usb" aria-pressed="false">ESP32 · direct USB</button>
         </div>
-        <div class="field">
-          <label for="fw-file">Firmware image (.uf2)</label>
-          <input id="fw-file" type="file" accept=".uf2" />
-          <span class="note" id="fw-file-info">No file selected.</span>
-        </div>
-        <ol class="stepper">
-          <li class="step" id="fw-step-1">
-            <span class="step-no">1</span>
-            <div class="step-body">
-              <span class="step-title">Reboot to bootloader</span>
-              <div class="row"><button id="fw-reboot" disabled>Reboot to BOOTSEL</button></div>
-              <span class="note">
-                Needs the serial link connected — the session closes and the port is tapped at
-                1200&nbsp;baud, restarting the RP2040 as “RP2 Boot”.
-                Device already showing the <code>RPI-RP2</code> drive? Skip to step&nbsp;2.
-              </span>
-            </div>
-          </li>
-          <li class="step" id="fw-step-2">
-            <span class="step-no">2</span>
-            <div class="step-body">
-              <span class="step-title">Connect bootloader</span>
-              <div class="row"><button id="fw-connect">Connect bootloader</button></div>
-              <span class="note">Pick “RP2 Boot” in the browser's USB dialog.</span>
-            </div>
-          </li>
-          <li class="step" id="fw-step-3">
-            <span class="step-no">3</span>
-            <div class="step-body">
-              <span class="step-title">Flash</span>
-              <div class="row"><button id="fw-flash" class="primary" disabled>Flash firmware</button></div>
-              <div id="fw-progress" hidden>
-                <div class="fw-progress-bar"><div id="fw-bar"></div></div>
-                <span class="note" id="fw-phase"></span>
+
+        <div id="fw-mode-rp2040">
+          <div id="fw-unsupported" class="unsupported" hidden>
+            <b>This browser can't flash over USB</b>
+            <p>The WebUSB API is not available here. Flashing needs a <b>desktop</b> Chromium browser:</p>
+            <ul class="browser-list">
+              <li>Google Chrome (61+)</li>
+              <li>Microsoft Edge (79+)</li>
+              <li>Opera (48+)</li>
+            </ul>
+            <p class="note">Firefox and Safari do not implement WebUSB. Telemetry above is unaffected.</p>
+          </div>
+          <div class="field">
+            <label for="fw-file">Firmware image (.uf2)</label>
+            <input id="fw-file" type="file" accept=".uf2" />
+            <span class="note" id="fw-file-info">No file selected.</span>
+          </div>
+          <ol class="stepper">
+            <li class="step" id="fw-step-1">
+              <span class="step-no">1</span>
+              <div class="step-body">
+                <span class="step-title">Reboot to bootloader</span>
+                <div class="row"><button id="fw-reboot" disabled>Reboot to BOOTSEL</button></div>
+                <span class="note">
+                  Needs the serial link connected — the session closes and the port is tapped at
+                  1200&nbsp;baud, restarting the RP2040 as “RP2 Boot”.
+                  Device already showing the <code>RPI-RP2</code> drive? Skip to step&nbsp;2.
+                </span>
               </div>
-            </div>
-          </li>
-        </ol>
-        <div id="fw-log" class="log-host fw-log" role="log" aria-live="polite" hidden></div>
-        <div class="callout">
-          The UPS power path runs on a separate MCU — the output keeps powering your device while
-          the RP2040 sits in the bootloader. Erase, write and verify run entirely in the browser.
+            </li>
+            <li class="step" id="fw-step-2">
+              <span class="step-no">2</span>
+              <div class="step-body">
+                <span class="step-title">Connect bootloader</span>
+                <div class="row"><button id="fw-connect">Connect bootloader</button></div>
+                <span class="note">Pick “RP2 Boot” in the browser's USB dialog.</span>
+              </div>
+            </li>
+            <li class="step" id="fw-step-3">
+              <span class="step-no">3</span>
+              <div class="step-body">
+                <span class="step-title">Flash</span>
+                <div class="row"><button id="fw-flash" class="primary" disabled>Flash firmware</button></div>
+                <div id="fw-progress" hidden>
+                  <div class="fw-progress-bar"><div id="fw-bar"></div></div>
+                  <span class="note" id="fw-phase"></span>
+                </div>
+              </div>
+            </li>
+          </ol>
+          <div class="callout">
+            The UPS power path runs on a separate MCU — the output keeps powering your device while
+            the RP2040 sits in the bootloader. Erase, write and verify run entirely in the browser.
+          </div>
         </div>
+
+        <div id="fw-mode-esp32-link" hidden>
+          <div class="field">
+            <label for="fwl-file">ESP32 app image (.bin)</label>
+            <input id="fwl-file" type="file" accept=".bin" />
+            <span class="note" id="fwl-file-info">No file selected.</span>
+          </div>
+          <span class="note err-text" id="fwl-need-link">Connect the UPS first — this mode streams over the normal serial session.</span>
+          <div class="row" style="margin-top:8px"><button id="fwl-flash" class="primary" disabled>Upload &amp; install</button></div>
+          <div id="fwl-progress" hidden style="margin-top:8px">
+            <div class="fw-progress-bar"><div id="fwl-bar"></div></div>
+            <span class="note" id="fwl-phase"></span>
+          </div>
+          <div class="callout">
+            Streams the image over the UPS link into the ESP32's spare OTA slot (<code>net.fw_xfer</code>,
+            stop-and-wait — takes a few minutes). On commit the ESP32 checks the SHA-256 and reboots into
+            the new firmware; the OTA <b>rollback safety</b> applies — an unhealthy build reverts automatically.
+            Requires ESP32 firmware already on the two-OTA layout (older units: migrate once via
+            <b>ESP32 · direct USB</b>).
+          </div>
+        </div>
+
+        <div id="fw-mode-esp32-usb" hidden>
+          <div id="fwu-unsupported" class="unsupported" hidden>
+            <b>This browser can't connect to serial devices</b>
+            <p>The Web Serial API is not available here. Use a <b>desktop</b> browser that supports it:</p>
+            <ul class="browser-list">
+              <li>Google Chrome (89+)</li>
+              <li>Microsoft Edge (89+)</li>
+              <li>Mozilla Firefox (151+)</li>
+              <li>Opera (75+)</li>
+            </ul>
+            <p class="note">Safari and mobile browsers are not supported.</p>
+          </div>
+          <div class="row" style="margin-bottom:10px">
+            <button id="fwu-connect">Connect ESP32 (M.2 USB)</button>
+            <span class="note" id="fwu-chip"></span>
+          </div>
+          <div class="field">
+            <label for="fwu-app">App image (.bin) → 0x10000</label>
+            <input id="fwu-app" type="file" accept=".bin" />
+            <span class="note" id="fwu-app-info">No file selected.</span>
+          </div>
+          <details>
+            <summary class="note" style="cursor:pointer">One-time OTA-layout migration files (optional)</summary>
+            <div class="field" style="margin-top:8px">
+              <label for="fwu-boot">bootloader.bin → 0x0</label>
+              <input id="fwu-boot" type="file" accept=".bin" />
+              <span class="note" id="fwu-boot-info">Not selected — region untouched.</span>
+            </div>
+            <div class="field">
+              <label for="fwu-ptable">partition-table.bin → 0x8000</label>
+              <input id="fwu-ptable" type="file" accept=".bin" />
+              <span class="note" id="fwu-ptable-info">Not selected — region untouched.</span>
+            </div>
+            <div class="field">
+              <label for="fwu-otadata">ota_data_initial.bin → 0xd000</label>
+              <input id="fwu-otadata" type="file" accept=".bin" />
+              <span class="note" id="fwu-otadata-info">Not selected — region untouched.</span>
+            </div>
+            <label class="note" style="display:flex;align-items:center;gap:6px">
+              <input type="checkbox" id="fwu-erase-nvs" /> Erase old NVS region (0x9000, 0x6000)
+            </label>
+          </details>
+          <div class="row" style="margin-top:10px"><button id="fwu-flash" class="primary" disabled>Flash</button></div>
+          <div id="fwu-progress" hidden style="margin-top:8px">
+            <div class="fw-progress-bar"><div id="fwu-bar"></div></div>
+            <span class="note" id="fwu-phase"></span>
+          </div>
+          <div class="callout">
+            Plug the <b>M.2 module's own USB port</b> into this computer (ESP32-S3 USB-Serial-JTAG).
+            App-only updates need just the .bin; the optional files + NVS erase reproduce the documented
+            one-time migration from the factory single-app layout to the two-OTA layout.
+            Per the firmware README: <b>never</b> full-erase (<code>erase_flash</code>) a provisioned unit —
+            it wipes the per-device <code>prov</code> partition at <code>0x310000</code>, which must survive.
+            Every region is MD5-verified after writing.
+          </div>
+        </div>
+
+        <div id="fw-log" class="log-host fw-log" role="log" aria-live="polite" hidden></div>
       </section>
 
       <section class="card" id="info-card" hidden>

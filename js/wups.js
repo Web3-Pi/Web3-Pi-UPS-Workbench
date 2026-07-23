@@ -30,13 +30,32 @@ export const CLASS = { SYSTEM: 0x01, POWER: 0x02, NET: 0x03, HOST: 0x04, UI: 0x0
 export const OP = {
   SYSTEM: { PING: 0x01, HELLO: 0x02, STATUS_QUERY: 0x03, LOG: 0x04 },
   POWER: { STATUS: 0x01, ENABLE: 0x02, DISABLE: 0x03, CYCLE: 0x04, RESET: 0x05, EVENT: 0x10 },
-  NET: { STATUS: 0x01, PUBLISH: 0x02, DOWNLINK: 0x10, TIME_SYNC: 0x20, CONFIG: 0x21 },
+  NET: {
+    STATUS: 0x01, PUBLISH: 0x02, DOWNLINK: 0x10, TIME_SYNC: 0x20, CONFIG: 0x21,
+    FW_XFER_BEGIN: 0x23, FW_XFER_DATA: 0x24, FW_XFER_END: 0x25,
+  },
   UI: { BUTTON_EVENT: 0x01, SET_SCREEN: 0x02, BEEP: 0x03, DISPLAY_MSG: 0x04 },
 };
 
 export const FLAG = { REQ: 0x01, RESP: 0x02, EVENT: 0x04, NEED_ACK: 0x80 };
 
 export const NET_CONFIG_ITEM = { HTTP_URL: 0x01, DEVICE_ID: 0x02 };
+
+// net.fw_xfer_* — chunked firmware transfer over the local WUPS link
+// (protocol.h WUPS_FW_TARGET_* / WUPS_FW_XFER_*). Strictly stop-and-wait:
+// every REQ must be answered by its RESP before the next one goes out.
+export const FW_TARGET = { ESP32: 1, RP2040: 2 };
+export const FW_XFER_CHUNK = MAX_PAYLOAD - 4; // 236 — max image bytes per fw_xfer_data frame
+export const FW_XFER_OK = 0;
+export const FW_XFER_SEQ_MISMATCH = 3;
+export const FW_XFER_RESULT_NAMES = {
+  0: 'OK',
+  1: 'BAD_REQ',       // malformed / wrong target / bad len
+  2: 'BUSY',          // another update session in progress
+  3: 'SEQ_MISMATCH',  // offset not contiguous — restart from BEGIN
+  4: 'FLASH_ERR',     // staging write/erase failed
+  5: 'VERIFY_FAIL',   // SHA-256 mismatch at END(commit)
+};
 
 export const POWER_EVENT_NAMES = {
   1: 'MAINS LOST',
@@ -260,6 +279,12 @@ export function decodeNetConfigResult(p) {
   return { item: p[1], result: p[2] };
 }
 
+/** fw_xfer RESP — a single result byte at payload[0] (WUPS_FW_XFER_*). */
+export function decodeFwXferResult(p) {
+  if (p.length < 1) return null;
+  return { result: p[0], name: FW_XFER_RESULT_NAMES[p[0]] ?? `result ${p[0]}` };
+}
+
 // ---------------------------------------------------------------- request builders
 
 export const req = {
@@ -284,6 +309,42 @@ export const req = {
     d.setUint16(2, freqHz, true);
     d.setUint16(4, durMs, true);
     return buildFrame({ dst: ADDR.RP2040, cls: CLASS.UI, op: OP.UI.BEEP, flags: FLAG.REQ, payload: p });
+  },
+
+  /** net.fw_xfer_begin → ESP32 — wups_net_fw_xfer_begin_v1_t (40 bytes):
+   * version u8, target u8, reserved[2], image_len u32 LE, sha256[32].
+   * `sha256` is the RAW digest of the exact image bytes (not hex). */
+  fwXferBegin: (target, imageLen, sha256) => {
+    if (sha256.length !== 32) throw new Error('sha256 must be 32 raw bytes');
+    const p = new Uint8Array(40);
+    p[0] = PROTO_VERSION;
+    p[1] = target;
+    new DataView(p.buffer).setUint32(4, imageLen, true);
+    p.set(sha256, 8);
+    return buildFrame({ dst: ADDR.ESP32, cls: CLASS.NET, op: OP.NET.FW_XFER_BEGIN, flags: FLAG.REQ, payload: p });
+  },
+
+  /** net.fw_xfer_data → ESP32 — u32 offset LE + raw image bytes. `offset`
+   * must equal the byte count the receiver has accepted so far (contiguous,
+   * in-order) or the RESP is SEQ_MISMATCH. */
+  fwXferData: (offset, chunk) => {
+    if (chunk.length === 0 || chunk.length > FW_XFER_CHUNK) {
+      throw new Error(`chunk must be 1..${FW_XFER_CHUNK} bytes`);
+    }
+    const p = new Uint8Array(4 + chunk.length);
+    new DataView(p.buffer).setUint32(0, offset, true);
+    p.set(chunk, 4);
+    return buildFrame({ dst: ADDR.ESP32, cls: CLASS.NET, op: OP.NET.FW_XFER_DATA, flags: FLAG.REQ, payload: p });
+  },
+
+  /** net.fw_xfer_end → ESP32 — wups_net_fw_xfer_end_v1_t (4 bytes).
+   * commit=1: verify SHA-256 over the staged image, apply + reboot;
+   * commit=0: abort/discard the session. */
+  fwXferEnd: (commit) => {
+    const p = new Uint8Array(4);
+    p[0] = PROTO_VERSION;
+    p[1] = commit ? 1 : 0;
+    return buildFrame({ dst: ADDR.ESP32, cls: CLASS.NET, op: OP.NET.FW_XFER_END, flags: FLAG.REQ, payload: p });
   },
 
   /** net.config → ESP32. `value` is an ASCII string (may be '' to clear). */

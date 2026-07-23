@@ -283,6 +283,32 @@ button.small { padding: 4px 10px; font-size: 12.5px; border-radius: 6px; }
 }
 .callout b { color: var(--text); }
 
+/* ------------------------------------------------------------- firmware card */
+
+/* Flash-target selector (segmented control). */
+.seg {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.seg button {
+  flex: 1;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 7px 6px;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.seg button + button { border-left: 1px solid var(--border-strong); }
+.seg button[aria-pressed='true'] {
+  background: var(--action);
+  color: var(--text-heading);
+  font-weight: 600;
+}
+
 /* ------------------------------------------------------------- firmware stepper */
 
 .stepper { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
@@ -346,7 +372,8 @@ button.small { padding: 4px 10px; font-size: 12.5px; border-radius: 6px; }
 }
 .overlay h3 { font-family: var(--font-heading); color: var(--text-heading); margin: 0 0 6px; }
 .overlay .warn { color: var(--status-warn); font-size: 12.5px; margin-top: 12px; }
-.overlay .unsupported {
+/* Shared by the connect gate (.overlay) and the Firmware card modes. */
+.unsupported {
   margin: 16px auto 0;
   max-width: 460px;
   text-align: left;
@@ -356,10 +383,11 @@ button.small { padding: 4px 10px; font-size: 12.5px; border-radius: 6px; }
   padding: 12px 16px;
   font-size: 13px;
 }
-.overlay .unsupported > b { color: var(--status-crit); }
-.overlay .unsupported .browser-list { margin: 6px 0; padding-left: 20px; color: var(--text); }
-.overlay .unsupported .browser-list li { margin: 2px 0; }
-.overlay .unsupported .note { color: var(--text-muted); font-size: 12px; margin-bottom: 0; }
+.card .unsupported { margin: 0 0 12px; }
+.unsupported > b { color: var(--status-crit); }
+.unsupported .browser-list { margin: 6px 0; padding-left: 20px; color: var(--text); }
+.unsupported .browser-list li { margin: 2px 0; }
+.unsupported .note { color: var(--text-muted); font-size: 12px; margin-bottom: 0; }
 
 .toast-host { position: fixed; bottom: 18px; right: 18px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
 .toast {
