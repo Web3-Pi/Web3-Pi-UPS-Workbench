@@ -1,5 +1,5 @@
 # Static site — nothing to build, nginx serves the files as-is.
-FROM nginx:1.30.6-alpine
+FROM nginx:1.30.7-alpine
 
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY index.html /usr/share/nginx/html/
